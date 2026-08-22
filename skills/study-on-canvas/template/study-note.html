@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="{{LANG}}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<style>
+  /* 팔레트: honja-nonsul design.md의 label 중립 스케일을 무채색(채도 0)으로 변환한 다크 테마.
+     빨강(#FF6B55)은 UI 강조, 노랑(#E5C07B)은 코드와 "설명문이 있는 개념" 표시에 쓴다. */
+  :root {
+    color-scheme: dark;
+    --bg: #141414;
+    --text: #EDEDED;
+    --text-muted: #9A9A9A;
+    --border: #2E2E2E;
+    --sidebar-bg: #1C1C1C;
+    --tab-bg: #1C1C1C;
+    --tab-active-bg: #141414;
+    --code-bg: #1F1F1F;
+    --yellow: #E5C07B;
+    --yellow-border: rgba(229, 192, 123, 0.38);
+    --code-text: var(--yellow);
+    --accent: #FF6B55;
+    --accent-text: #141414;
+    --card-bg: #262626;
+    --card-hover: #2F2F2F;
+    --card-text: #EDEDED;
+    --group-title: #9A9A9A;
+    --scrim: rgba(0, 0, 0, 0.55);
+    /* radius 스케일: sm(6) → md(10) → lg(14). 개념 카드는 lg + 스쿼클 코너. */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    /* 탭 바와 개념 지도 헤더가 같은 높이를 쓰도록 하는 토큰 */
+    --bar-height: 2.8rem;
+  }
+  /* 다크 테마로 고정 — 라이트 모드 미적용 */
+  * { box-sizing: border-box; }
+  html { height: 100%; }
+  body {
+    margin: 0;
+    padding: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Segoe UI", "Malgun Gothic", sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  header.page-header {
+    flex: 0 0 auto;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  header.page-header h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  header.page-header .meta {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+  .map-btn {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    corner-shape: squircle;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .map-btn:hover {
+    color: var(--text);
+    border-color: var(--text-muted);
+  }
+  /* 본문·사이드바는 화면 높이를 꽉 채우고, 스크롤은 각 영역 안에서 일어난다 */
+  .layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 0;
+  }
+  body.map-open .layout { display: none; }
+  main.content-area {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+  nav.tabs {
+    flex: 0 0 auto;
+    height: var(--bar-height);
+    display: flex;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border);
+    background: var(--tab-bg);
+    scrollbar-width: thin;
+  }
+  nav.tabs::-webkit-scrollbar { height: 6px; }
+  nav.tabs::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .tab {
+    flex: 0 0 auto;
+    padding: 0 1.25rem;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-family: inherit;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .tab:hover {
+    color: var(--text);
+  }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    background: var(--tab-active-bg);
+    font-weight: 600;
+  }
+  section.panels {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 2rem;
+    overflow-y: auto;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .panel h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.75rem;
+    font-weight: 700;
+  }
+  .panel .breadcrumb {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+  .panel .breadcrumb .parent-link {
+    color: var(--accent);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .panel .breadcrumb .parent-link:hover { text-decoration: underline; }
+  .panel .explanation {
+    max-width: 720px;
+  }
+  .panel .explanation p { margin: 0.75rem 0; }
+  .panel .explanation ul, .panel .explanation ol { padding-left: 1.5rem; }
+  .panel .explanation code {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+  .panel .explanation pre {
+    background: var(--code-bg);
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    overflow-x: auto;
+  }
+  .panel .explanation pre code { background: none; padding: 0; }
+  .panel .explanation blockquote {
+    margin: 1rem 0;
+    padding: 0.25rem 1rem;
+    border-left: 3px solid var(--accent);
+    color: var(--text-muted);
+  }
+  aside.sidebar {
+    background: var(--sidebar-bg);
+    border-left: 1px solid var(--border);
+    padding: 1.5rem 1.25rem;
+    height: 100%;
+    overflow-y: auto;
+  }
+  .sheet-handle { display: none; }
+  .sidebar-section { margin-bottom: 1.75rem; }
+  .sidebar-section h3 {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .sidebar-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  /* 상위 개념 그룹 제목 — 같은 상위 개념 카드들을 묶어 한 번만 표시 */
+  .group-title {
+    margin: 0.6rem 0 0;
+    padding: 0 0.15rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--group-title);
+    letter-spacing: 0.02em;
+  }
+  .group-title:first-child { margin-top: 0; }
+  .sidebar-item {
+    padding: 0.65rem 0.85rem;
+    background: var(--card-bg);
+    color: var(--card-text);
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+    /* 스쿼클(superellipse) 코너 — 미지원 브라우저는 일반 라운드로 폴백 */
+    corner-shape: squircle;
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+  .sidebar-item .label {
+    display: block;
+    font-weight: 500;
+  }
+  /* 설명문이 있는 개념 — 노란색 + 취소선. 카드를 지우지 않고 자리를 그대로 지킨다. */
+  .sidebar-item.covered {
+    border-color: var(--yellow-border);
+    cursor: pointer;
+  }
+  .sidebar-item.covered:hover { background: var(--card-hover); }
+  .sidebar-item.covered .label {
+    color: var(--yellow);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
+  .sidebar-empty {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-style: italic;
+    padding: 0.5rem 0;
+  }
+
+  /* 개념 지도 — 헤더는 그대로 두고 그 아래 영역을 통째로 차지한다 */
+  .map-view {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .map-view[hidden] { display: none; }
+  .map-head {
+    flex: 0 0 auto;
+    height: var(--bar-height);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--tab-bg);
+  }
+  .map-head h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+  }
+  .map-close {
+    margin-left: auto;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    corner-shape: squircle;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .map-close:hover { color: var(--text); border-color: var(--text-muted); }
+  .map-tree {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 2rem;
+    overflow: auto;
+  }
+  .map-tree ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .map-tree ul ul {
+    margin-left: 1.15rem;
+    padding-left: 1.15rem;
+    border-left: 1px solid var(--border);
+  }
+  .map-tree li {
+    position: relative;
+    padding: 0.2rem 0;
+  }
+  .map-tree ul ul > li::before {
+    content: "";
+    position: absolute;
+    left: -1.15rem;
+    top: 1.15rem;
+    width: 0.8rem;
+    height: 1px;
+    background: var(--border);
+  }
+  .concept-card {
+    display: inline-block;
+    max-width: min(100%, 420px);
+    padding: 0.5rem 0.85rem;
+    background: var(--card-bg);
+    color: var(--card-text);
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+    corner-shape: squircle;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    line-height: 1.35;
+    text-align: left;
+  }
+  /* 설명문이 있는 개념만 노란색 + 클릭 가능. 중립색 카드는 상호작용 없음 */
+  button.concept-card {
+    color: var(--yellow);
+    border-color: var(--yellow-border);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button.concept-card:hover { background: var(--card-hover); }
+
+  /* 모바일 전용 — 데스크톱에서는 숨김 */
+  .fab, .scrim { display: none; }
+
+  @media (max-width: 900px) {
+    header.page-header { padding: 1rem 1.25rem; }
+    .layout {
+      grid-template-columns: 1fr;
+    }
+    /* 사이드바는 하단 시트로 전환. FAB을 눌러야 올라온다. */
+    aside.sidebar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      height: auto;
+      max-height: 72dvh;
+      border-left: none;
+      border-top: 1px solid var(--border);
+      border-radius: 22px 22px 0 0;
+      corner-shape: squircle;
+      padding: 0.75rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
+      box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.5);
+      transform: translateY(110%);
+      transition: transform 0.25s ease;
+    }
+    body.sheet-open aside.sidebar { transform: translateY(0); }
+    .sidebar-section { margin-bottom: 0.5rem; }
+    .sheet-handle {
+      display: block;
+      width: 40px;
+      height: 4px;
+      margin: 0 auto 0.9rem;
+      border-radius: 2px;
+      background: var(--border);
+    }
+    .scrim {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: var(--scrim);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    body.sheet-open .scrim {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .fab {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: fixed;
+      right: 1.1rem;
+      bottom: calc(1.1rem + env(safe-area-inset-bottom));
+      z-index: 40;
+      padding: 0.8rem 1.1rem;
+      border: none;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .fab-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.35em;
+      height: 1.35em;
+      padding: 0 0.35em;
+      border-radius: 999px;
+      background: var(--accent-text);
+      color: var(--accent);
+      font-size: 0.8rem;
+    }
+    body.sheet-open .fab,
+    body.map-open .fab {
+      opacity: 0;
+      transform: scale(0.85);
+      pointer-events: none;
+    }
+    .fab[hidden] { display: none; }
+    section.panels { padding: 1.25rem; }
+    .map-head { padding: 0 1.25rem; }
+    .map-tree { padding: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <h1>{{L_TOPIC}}: <span id="root-topic">{{ROOT_TOPIC}}</span></h1>
+  <span class="meta">{{L_STARTED}}: {{DATE}}</span>
+  <button class="map-btn" id="map-open" type="button" aria-controls="map-view" aria-expanded="false" aria-label="{{L_MAP_OPEN}}" title="{{L_MAP}}">
+    <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/>
+      <path d="M9 4v14"/>
+      <path d="M15 6v14"/>
+    </svg>
+  </button>
+</header>
+
+<div class="layout">
+  <main class="content-area">
+    <nav class="tabs" id="tabs">
+<!-- TABS_INSERT -->
+    </nav>
+    <section class="panels" id="panels">
+<!-- PANELS_INSERT -->
+    </section>
+  </main>
+
+  <div class="scrim" id="scrim"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <div class="sidebar-section">
+      <h3>{{L_SUGGESTED}}</h3>
+      <ul id="suggested-list">
+<!-- SIDEBAR_SUGGESTED_INSERT -->
+        <li class="sidebar-empty" id="suggested-empty">{{L_EMPTY}}</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<section class="map-view" id="map-view" hidden>
+  <div class="map-head">
+    <h2>{{L_MAP}}</h2>
+    <button class="map-close" id="map-close" type="button">✕ {{L_CLOSE}}</button>
+  </div>
+  <div class="map-tree" id="map-tree"></div>
+</section>
+
+<button class="fab" id="fab" type="button" aria-controls="sidebar" aria-expanded="false">
+  {{L_SUGGESTED}} <span class="fab-count" id="fab-count">0</span>
+</button>
+
+<script>
+  function panelOf(id) {
+    return id ? document.querySelector('.panel[data-id="' + CSS.escape(id) + '"]') : null;
+  }
+  function tabLabel(id) {
+    const tab = id ? document.querySelector('.tab[data-id="' + CSS.escape(id) + '"]') : null;
+    return tab ? tab.textContent.trim() : '';
+  }
+  function cardLabel(id) {
+    const el = id ? document.querySelector('#suggested-list .sidebar-item[data-id="' + CSS.escape(id) + '"] .label') : null;
+    return el ? el.textContent.trim() : '';
+  }
+  // 사이드바 카드 = 개념 목록. 설명문(패널)이 있으면 covered.
+  function concepts() {
+    return Array.from(document.querySelectorAll('#suggested-list .sidebar-item')).map(function(li) {
+      const label = li.querySelector('.label');
+      return {
+        el: li,
+        id: li.dataset.id || '',
+        parent: (li.dataset.parent || '').trim(),
+        label: label ? label.textContent.trim() : '',
+        covered: !!panelOf(li.dataset.id)
+      };
+    });
+  }
+  function activate(id) {
+    if (!id) return;
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.id === id);
+    });
+    document.querySelectorAll('.panel').forEach(p => {
+      p.classList.toggle('active', p.dataset.id === id);
+    });
+    const active = document.querySelector('.tab.active');
+    if (active) active.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }
+  // 카드의 data-parent(상위 개념 슬러그)로 묶고, 그룹마다 제목 한 줄을 세운다.
+  function groupSuggestions() {
+    const list = document.getElementById('suggested-list');
+    if (!list) return 0;
+    const items = concepts();
+    items.forEach(function(c) { c.el.classList.toggle('covered', c.covered); });
+    const groups = new Map();
+    items.forEach(function(c) {
+      if (!groups.has(c.parent)) groups.set(c.parent, []);
+      groups.get(c.parent).push(c);
+    });
+    list.querySelectorAll('.group-title').forEach(function(t) { t.remove(); });
+    const frag = document.createDocumentFragment();
+    // 상위 개념 없는 카드는 항상 맨 앞 — 아래 그룹 제목에 딸린 것처럼 보이지 않게. 나머지는 등장 순서 유지.
+    const keys = Array.from(groups.keys()).sort(function(a, b) {
+      return a === '' ? -1 : (b === '' ? 1 : 0);
+    });
+    keys.forEach(function(key) {
+      if (key) {
+        const title = document.createElement('li');
+        title.className = 'group-title';
+        title.textContent = tabLabel(key) || cardLabel(key) || key;
+        frag.appendChild(title);
+      }
+      groups.get(key).forEach(function(c) { frag.appendChild(c.el); });
+    });
+    list.insertBefore(frag, document.getElementById('suggested-empty'));
+    return items.length;
+  }
+  // 개념 지도 — 카드의 상·하위 관계를 트리로 그린다
+  function buildMap() {
+    const host = document.getElementById('map-tree');
+    if (!host) return;
+    const items = concepts();
+    const nodes = new Map();
+    const roots = [];
+    const mk = function(id, label, covered) {
+      return { id: id, label: label, covered: covered, children: [] };
+    };
+    const rootTab = document.querySelector('.tab');
+    const rootId = rootTab ? rootTab.dataset.id : '';
+    if (rootId && !items.some(function(c) { return c.id === rootId; })) {
+      const root = mk(rootId, tabLabel(rootId) || rootId, !!panelOf(rootId));
+      nodes.set(rootId, root);
+      roots.push(root);
+    }
+    items.forEach(function(c) {
+      if (!nodes.has(c.id)) nodes.set(c.id, mk(c.id, c.label || tabLabel(c.id) || c.id, c.covered));
+    });
+    items.forEach(function(c) {
+      const node = nodes.get(c.id);
+      const parent = c.parent && c.parent !== c.id ? nodes.get(c.parent) : null;
+      if (parent) parent.children.push(node);
+      else if (roots.indexOf(node) === -1) roots.push(node);
+    });
+    host.textContent = '';
+    if (!roots.length) {
+      const empty = document.createElement('p');
+      empty.className = 'sidebar-empty';
+      empty.textContent = '{{L_MAP_EMPTY}}';
+      host.appendChild(empty);
+      return;
+    }
+    host.appendChild(renderNodes(roots));
+  }
+  function renderNodes(list) {
+    const ul = document.createElement('ul');
+    list.forEach(function(node) {
+      const li = document.createElement('li');
+      // 설명문이 있으면 버튼(노란색·클릭 가능), 없으면 span(중립색·상호작용 없음)
+      const card = document.createElement(node.covered ? 'button' : 'span');
+      card.className = 'concept-card';
+      card.textContent = node.label;
+      if (node.covered) {
+        card.type = 'button';
+        card.dataset.id = node.id;
+      }
+      li.appendChild(card);
+      if (node.children.length) li.appendChild(renderNodes(node.children));
+      ul.appendChild(li);
+    });
+    return ul;
+  }
+  function setSheet(open) {
+    document.body.classList.toggle('sheet-open', open);
+    const fab = document.getElementById('fab');
+    if (fab) fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function setMap(open) {
+    const view = document.getElementById('map-view');
+    if (!view) return;
+    if (open) {
+      setSheet(false);
+      buildMap();
+    }
+    view.hidden = !open;
+    document.body.classList.toggle('map-open', open);
+    const btn = document.getElementById('map-open');
+    if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('#map-open')) { setMap(true); return; }
+    if (e.target.closest('#map-close')) { setMap(false); return; }
+    const conceptCard = e.target.closest('button.concept-card');
+    if (conceptCard) {
+      activate(conceptCard.dataset.id);
+      setMap(false);
+      return;
+    }
+    if (e.target.closest('#fab')) {
+      setSheet(!document.body.classList.contains('sheet-open'));
+      return;
+    }
+    if (e.target.closest('#scrim') || e.target.closest('.sheet-handle')) {
+      setSheet(false);
+      return;
+    }
+    const covered = e.target.closest('.sidebar-item.covered');
+    if (covered) {
+      activate(covered.dataset.id);
+      setSheet(false);
+      return;
+    }
+    const tab = e.target.closest('.tab');
+    if (tab) {
+      e.preventDefault();
+      location.hash = 'topic-' + tab.dataset.id;
+      activate(tab.dataset.id);
+      return;
+    }
+    const parentLink = e.target.closest('.parent-link');
+    if (parentLink) {
+      e.preventDefault();
+      const id = parentLink.dataset.id;
+      location.hash = 'topic-' + id;
+      activate(id);
+    }
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Escape') return;
+    if (document.body.classList.contains('map-open')) setMap(false);
+    else setSheet(false);
+  });
+  window.addEventListener('hashchange', function() {
+    const id = location.hash.replace('#topic-', '');
+    if (id) activate(id);
+  });
+  (function() {
+    const initial = location.hash.replace('#topic-', '');
+    const firstTab = document.querySelector('.tab');
+    activate(initial || (firstTab && firstTab.dataset.id));
+    const count = groupSuggestions();
+    const emptyMsg = document.getElementById('suggested-empty');
+    if (emptyMsg) emptyMsg.style.display = count ? 'none' : '';
+    const fab = document.getElementById('fab');
+    const fabCount = document.getElementById('fab-count');
+    if (fabCount) fabCount.textContent = String(count);
+    if (fab) fab.hidden = count === 0;
+  })();
+</script>
+</body>
+</html>
