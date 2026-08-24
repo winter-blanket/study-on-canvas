@@ -2,49 +2,82 @@
 
 [한국어](README.md) · [English](README.en.md)
 
-- A Claude Code plugin that helps you learn by turning your conversation with an LLM into a visual HTML file as you go.
+- A Claude Code plugin that helps you learn by visualizing your conversation as an HTML file while you pick up new concepts with an LLM.
 
-## Usage
+> Why I built this plugin
+> - When something is unclear and I ask an LLM about A, it often follows up with "shall we look at B next?". So I ask about B, and out comes C, and sometimes it suggests two or more follow-up concepts at once. I make a mental note to come back to C, then follow whatever the LLM suggested instead and forget all about it. And after a long conversation I sometimes lose track of which concepts I actually went through that day.
+> - So I built a plugin that draws the `concept map` the LLM is teaching me as a visual, and leaves an HTML file behind as a record of what I studied.
 
-### 1. Ask about the concept you want to learn, together with the plugin call.
+### Supported LLMs
 
-- Calling the plugin directly with a slash command
+- Claude Code
+
+## How to use
+
+### 1. Call the plugin and ask about the concept you want to learn.
+
+- Calling the plugin directly with a slash command: type your question right after the plugin command.
 
 ```plain_text
 /study-on-canvas:study-on-canvas I want to understand what Attention means in the paper "Attention Is All You Need", and how that idea led to today's generative AI.
 ```
 
-- Calling it in natural language — mentioning "canvas", "캔버스", or "study note" triggers the plugin without a slash command.
+- Calling it in natural language: mentioning "캔버스", "canvas", or "study note" triggers the plugin without a slash command.
 
 ```plain_text
-Let's talk on a canvas. I want to understand what Attention means in the paper "Attention Is All You Need".
+Let's talk on a canvas. I want to understand what Attention means in the paper "Attention Is All You Need", and how that idea led to today's generative AI.
 ```
+
+### 2. The LLM asks where to save the HTML file.
+
+- By default it creates a `learning-notes` folder in the directory where you ran the plugin and saves the file there.
+- If you want a different location, pick option 2, or pick option 3 and type the path yourself.
+
+![Asking where to save the file](./images/파일-저장-경로-묻기.png)
+
+### 3. The HTML file is created and opens automatically.
+
+- Once the file is written, it opens in your OS default browser.
+- You can read the explanation the LLM wrote.
+- On the right side of the screen, the LLM suggests concepts worth exploring next.
+- **For a comfortable setup, put the LLM chat window and the HTML file side by side on one monitor, as in the screenshot below.**
+
+![HTML layout](./images/html-레이아웃.png)
+
+### 4. You can also ask about anything the explanation made you curious about, not just the subtopics the LLM suggested.
+
+- From the state in step 3, I typed the following question into the terminal.
 
 ```plain_text
-Turn on the canvas and explain transformers to me
+Before going deeper into Attention, I want to understand the technical principles of RNNs and CNNs.
 ```
 
-You can also just say "let's talk on a canvas" with no topic. It will ask once what you want to study.
+- Once the LLM finishes working on that question, refresh your browser.
+- (1) The newly written explanation appears as a tab button.
+- (2) In the suggested subtopics list, concepts that already have an explanation are marked in yellow.
+  - Click a yellow concept to jump straight to its explanation.
 
-It does not trigger on plain questions that never mention the canvas, such as "explain transformers to me".
+![Asking a follow-up concept](./images/후속-개념-물어보기.png)
 
+### 5. Viewing the concept map
 
+- Click the map icon at the top right of the HTML page.
+- You get a parent–child diagram of every concept covered so far.
+- Concepts that have an explanation are marked in yellow. Click one to jump straight to its explanation.
 
+![Concept map](./images/개념-지도.png)
 
-A Claude Code plugin that keeps a live HTML study note of your conversation while you learn new concepts with an LLM.
+## Customizing the plugin
 
-Every time one concept is explained, one to three follow-up concepts are stacked in the sidebar. Even if you dive into one and drift off course, the sibling concepts you have not covered stay on screen — so "what else was I going to look at?" never happens.
+### HTML UI design
 
-## What it does
+- The `study-note.html` file is used as the template. For UI changes or any other broad change, edit the template.
+- For example, to change the UI colors, edit the `:root` CSS variables.
 
-- Start a session with `/study-on-canvas <topic>` and a single dark-themed HTML note is created and opened in your browser.
-- Every concept explained adds one tab and one explanation panel to the note.
-- At the same time, one to three follow-up concepts are stacked as sidebar cards. Never four or more — so you are not overwhelmed at once.
-- Cards for concepts already covered are not deleted; they only turn yellow. They keep their place and become a map.
-- Press the map button in the header and the parent–child relationships between cards are drawn as a tree (the concept map).
-- Once an explanation ends, it stops there. It does not ask "what should we look at next?". You decide what to cover by looking at the sidebar.
+### Fewer or more suggested subtopics
 
-The note is a single HTML file with no dependencies, so you can open, move, and share it as is. At mobile widths the sidebar turns into a bottom sheet.
+- Suggested subtopics are fixed at one to three.
+- To get fewer or more of them, edit `core principle 1 in SKILL.md`.
 
 ## Installing the plugin
 
@@ -55,33 +88,12 @@ In Claude Code:
 /plugin install study-on-canvas@study-on-canvas
 ```
 
-## Usage
+## Supported languages
 
-```
-/study-on-canvas:study-on-canvas transformers
-```
+- The HTML UI the plugin generates defaults to Korean and also supports English.
+- The HTML is generated in whichever language you used the first time you called the plugin.
 
-It asks once where to save. The default is `learning-notes/YYYY-MM-DD-<topic>.html` under the folder where the session started. After that, just talk.
-
-```
-> explain transformers        → tab created + 3 cards (Self-Attention / Positional Encoding / Multi-Head Attention)
-> explain self-attention      → tab added, the first card turns yellow, 2 new cards
-```
-
-When the note is updated, just refresh it in the browser.
-
-If you create the note inside a git repository it may get swept into a commit. If you would rather it did not, put `learning-notes/` in `.gitignore`.
-
-## Language
-
-The note UI defaults to Korean and also supports English. It is decided automatically from the language of the sentence that invoked the skill — ask in English and you get an English note. It does not change mid-session.
-
-## Requirements
-
-- Claude Code. It uses skill frontmatter such as `user-invocable` and the `AskUserQuestion` tool, so it does not work on other harnesses.
-- It tries to open the browser automatically on macOS, Linux, and Windows (Git Bash/MSYS). If that fails it just tells you the file path, which does not affect how the skill works.
-
-## Structure
+## File structure
 
 ```
 .claude-plugin/
@@ -93,13 +105,9 @@ skills/study-on-canvas/
     study-note.html    note template (single file, no external dependencies)
 ```
 
-The template only holds placeholders such as `{{TITLE}}` and `{{DATE}}` plus markers like `<!-- TABS_INSERT -->`. The skill never rewrites the whole file; it only inserts between those markers.
+- The template only holds placeholders such as `{{TITLE}}` and `{{DATE}}` plus markers like `<!-- TABS_INSERT -->`.
+- The plugin never rewrites the whole file; it only inserts between those markers.
 
-## Customizing
-
-- Colors: just edit the `:root` CSS variables in `study-note.html`. The theme is fixed to dark.
-- UI wording: SKILL.md has a per-language dictionary in its "노트 언어" (note language) table. To add a language, add one more column to that table.
-- Number of follow-up concepts: core principle 1 in SKILL.md.
 
 ## License
 
