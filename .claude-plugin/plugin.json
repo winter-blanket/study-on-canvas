@@ -1,7 +1,7 @@
 {
   "name": "study-on-canvas",
   "description": "LLM과 대화하며 배운 개념을 실시간 HTML 학습 노트로 남기는 Claude Code 스킬. 설명할 때마다 후속 개념을 사이드바에 쌓아 놓쳐지는 개념이 없게 한다.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "winter-blanket",
     "url": "https://github.com/winter-blanket"

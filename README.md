@@ -1,5 +1,34 @@
 # study-on-canvas
 
+- LLM과 대화하며 새로운 개념을 배울 때, 대화 내용을 HTML 파일로 시각화하여 학습을 도와주는 Claude Code 플러그인입니다. 
+
+## 사용법
+
+### 1. 플러그인 호출과 함께 내가 배우고 싶은 개념을 물어보세요. 
+
+- slash 명령어로 플러그인을 직접 호출할 때
+
+```plain_text
+/study-on-canvas:study-on-canvas Attention is all you need라는 논문에서 Attention이 어떤 개념인지, 이 개념이 어떻게 지금의 생성형 AI를 만드는데 기여했는지 알고 싶어.
+```
+
+- 자연어로 호출할 때 — "캔버스", "canvas", "학습 노트" 를 언급하면 슬래시 명령 없이도 플러그인이 발동합니다.
+
+```plain_text
+캔버스로 대화하자. Attention is all you need라는 논문에서 Attention이 어떤 개념인지 알고 싶어.
+```
+
+```plain_text
+canvas 켜고 트랜스포머 설명해줘
+```
+
+주제 없이 "캔버스로 대화하자" 라고만 해도 됩니다. 무엇을 공부할지 한 번 물어봅니다.
+
+"트랜스포머 설명해줘" 처럼 캔버스를 언급하지 않은 일반 질문에는 발동하지 않습니다.
+
+
+
+
 LLM과 대화하며 새 개념을 배울 때, 대화 내용을 실시간 HTML 학습 노트로 남기는 Claude Code 플러그인.
 
 개념을 하나 설명할 때마다 후속 개념을 1~3개씩 사이드바에 쌓아 둔다. 하나를 파고들다 옆길로 새더라도 아직 다루지 않은 형제 개념이 화면에 그대로 남아 있어, "그때 뭘 더 보려고 했더라"가 사라진다.
@@ -15,7 +44,7 @@ LLM과 대화하며 새 개념을 배울 때, 대화 내용을 실시간 HTML �
 
 노트는 의존성 없는 단일 HTML 파일이라 그대로 열고, 옮기고, 공유할 수 있다. 모바일 폭에서는 사이드바가 하단 시트로 바뀐다.
 
-## 설치
+## 플러그인 설치
 
 Claude Code에서:
 
@@ -47,7 +76,7 @@ Claude Code에서:
 
 ## 요구사항
 
-- Claude Code. `disable-model-invocation`·`user-invocable` 같은 스킬 프론트매터와 `AskUserQuestion` 도구를 쓰기 때문에 다른 하네스에서는 동작하지 않는다.
+- Claude Code. `user-invocable` 같은 스킬 프론트매터와 `AskUserQuestion` 도구를 쓰기 때문에 다른 하네스에서는 동작하지 않는다.
 - macOS·Linux·Windows(Git Bash/MSYS) 모두에서 브라우저 자동 열기를 시도한다. 실패하면 파일 경로만 안내하고, 스킬 동작 자체에는 영향이 없다.
 
 ## 구조
