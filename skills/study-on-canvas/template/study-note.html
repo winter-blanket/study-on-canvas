@@ -67,6 +67,17 @@
     color: var(--text-muted);
     font-size: 0.85rem;
   }
+  /* 세션 눈높이 배지 — 노트 전체 설명 수준을 한 눈에 보여준다 */
+  header.page-header .audience {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.1rem 0.6rem;
+    border: 1px solid var(--yellow-border);
+    border-radius: 999px;
+    color: var(--yellow);
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
   .map-btn {
     margin-left: auto;
     display: inline-flex;
@@ -135,6 +146,12 @@
     background: var(--tab-active-bg);
     font-weight: 600;
   }
+  /* teach-back 요약 탭 — 개념 탭 줄에서 시각적으로 떨어져 보이도록 구분선을 둔다 */
+  .tab.teachback { border-left: 1px solid var(--border); }
+  .tab.teachback.active {
+    color: var(--yellow);
+    border-bottom-color: var(--yellow);
+  }
   section.panels {
     flex: 1 1 auto;
     min-height: 0;
@@ -184,6 +201,39 @@
     border-left: 3px solid var(--accent);
     color: var(--text-muted);
   }
+  /* 설명 레이어 — 한 개념을 쉽게 / 기본 / 깊게 세 층으로 나눠 담는다.
+     레이어가 하나뿐인 패널에서는 전환 버튼을 JS가 숨긴다. */
+  .panel .layer-switch {
+    display: inline-flex;
+    gap: 2px;
+    margin-bottom: 1.25rem;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    corner-shape: squircle;
+    background: var(--sidebar-bg);
+  }
+  .panel .layer-switch[hidden] { display: none; }
+  .layer-btn {
+    padding: 0.3rem 0.85rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: color 0.15s, background 0.15s;
+  }
+  .layer-btn:hover { color: var(--text); }
+  .layer-btn.active {
+    background: var(--card-bg);
+    color: var(--text);
+    font-weight: 600;
+  }
+  .layer-btn[hidden] { display: none; }
+  .panel .layer { display: none; }
+  .panel .layer.active { display: block; }
   aside.sidebar {
     background: var(--sidebar-bg);
     border-left: 1px solid var(--border);
@@ -440,6 +490,7 @@
 <header class="page-header">
   <h1>{{L_TOPIC}}: <span id="root-topic">{{ROOT_TOPIC}}</span></h1>
   <span class="meta">{{L_STARTED}}: {{DATE}}</span>
+  <span class="audience" id="audience-badge">{{L_AUDIENCE}}: {{AUDIENCE}}</span>
   <button class="map-btn" id="map-open" type="button" aria-controls="map-view" aria-expanded="false" aria-label="{{L_MAP_OPEN}}" title="{{L_MAP}}">
     <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z"/>
@@ -508,6 +559,33 @@
         label: label ? label.textContent.trim() : '',
         covered: !!panelOf(li.dataset.id)
       };
+    });
+  }
+  // 설명 레이어 — 패널 하나 안에서 쉽게/기본/깊게를 갈아 끼운다
+  function setLevel(exp, level) {
+    if (!exp) return;
+    const layers = Array.from(exp.querySelectorAll(':scope > .layer'));
+    if (!layers.length) return;
+    const has = layers.some(function(l) { return l.dataset.level === level; });
+    const target = has ? level : layers[0].dataset.level;
+    exp.dataset.level = target;
+    layers.forEach(function(l) { l.classList.toggle('active', l.dataset.level === target); });
+    exp.querySelectorAll(':scope > .layer-switch .layer-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.level === target);
+    });
+  }
+  // 레이어가 없는 패널은 예전 구조 그대로 두고, 있는 패널만 전환 UI를 세운다
+  function initLayers() {
+    document.querySelectorAll('.panel .explanation').forEach(function(exp) {
+      const levels = Array.from(exp.querySelectorAll(':scope > .layer')).map(function(l) { return l.dataset.level; });
+      const sw = exp.querySelector(':scope > .layer-switch');
+      if (sw) {
+        sw.querySelectorAll('.layer-btn').forEach(function(b) {
+          b.hidden = levels.indexOf(b.dataset.level) === -1;
+        });
+        sw.hidden = levels.length < 2;
+      }
+      if (levels.length) setLevel(exp, exp.dataset.level || 'main');
     });
   }
   function activate(id) {
@@ -644,6 +722,11 @@
       setSheet(false);
       return;
     }
+    const layerBtn = e.target.closest('.layer-btn');
+    if (layerBtn) {
+      setLevel(layerBtn.closest('.explanation'), layerBtn.dataset.level);
+      return;
+    }
     const tab = e.target.closest('.tab');
     if (tab) {
       e.preventDefault();
@@ -672,6 +755,7 @@
     const initial = location.hash.replace('#topic-', '');
     const firstTab = document.querySelector('.tab');
     activate(initial || (firstTab && firstTab.dataset.id));
+    initLayers();
     const count = groupSuggestions();
     const emptyMsg = document.getElementById('suggested-empty');
     if (emptyMsg) emptyMsg.style.display = count ? 'none' : '';

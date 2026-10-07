@@ -14,24 +14,26 @@
 
 ## How to use
 
-### 1. Call the plugin and ask about the concept you want to learn.
+### 1. Call the plugin with a slash command and ask about the concept you want to learn.
 
-- Calling the plugin directly with a slash command: type your question right after the plugin command.
+- Type your question right after the plugin command.
 
 ```plain_text
 /study-on-canvas:study-on-canvas I want to understand what Attention means in the paper "Attention Is All You Need", and how that idea led to today's generative AI.
 ```
 
-- Calling it in natural language: mentioning "캔버스", "canvas", or "study note" triggers the plugin without a slash command.
+- Since v1.2.0 natural-language invocation ("let's talk on a canvas") is no longer supported. The slash command is the only entry point.
+  - Explanation and summarization skills tend to have wide triggers. With natural-language invocation open, a passing "explain that more simply" mid-session can hand the turn to another skill that answers in the terminal and never touches the HTML.
+  - A note that falls behind the conversation is worthless, so the entry point was narrowed to a single slash command.
 
-```plain_text
-Let's talk on a canvas. I want to understand what Attention means in the paper "Attention Is All You Need", and how that idea led to today's generative AI.
-```
-
-### 2. The LLM asks where to save the HTML file.
+### 2. The LLM asks where to save the HTML file and at what level to explain.
 
 - By default it creates a `learning-notes` folder in the directory where you ran the plugin and saves the file there.
 - If you want a different location, pick option 2, or pick option 3 and type the path yourself.
+- The level is one of Newcomer, Adjacent, or Practitioner. It sets the depth of every explanation in the note and shows up as a badge in the header.
+  - Newcomer: every term gets defined on the spot, with plenty of analogies.
+  - Adjacent: explained by contrast with what you already know.
+  - Practitioner: basics skipped, with the space spent on trade-offs and edge cases.
 
 ![Asking where to save the file](./images/파일-저장-경로-묻기.png)
 
@@ -67,6 +69,22 @@ Before going deeper into Attention, I want to understand the technical principle
 
 ![Concept map](./images/개념-지도.png)
 
+### 6. Say "simpler" when an explanation loses you.
+
+- Explanations are stacked in three layers — Simple, Standard, Deeper. Only Standard is filled in at first.
+- Saying "I don't get it" or "simpler" adds a Simple layer to the explanation you are looking at, instead of opening a new concept.
+  - No new tab, no new suggested subtopic. This is a comprehension move, not an exploration move.
+  - The original explanation stays. Toggling between the simple and the standard version shows you what was smoothed over, and that gap is exactly what you have not understood yet.
+- Questions that go a step further ("why does that hold", "any exceptions") add a Deeper layer the same way.
+- An explanation with only one layer shows no toggle at all.
+
+### 7. Ask for a summary when you want to teach it to someone.
+
+- Asking for a summary aimed at someone ("write this up for my team", "I need to explain this to my manager") adds a summary tab at the end of the note.
+- The framing shifts with the audience — decisions and risk for a manager, user experience for a designer.
+- Summary tabs are output, not concepts, so they stay out of the suggested subtopics and the concept map.
+- Rewriting what you learned at someone else's level is itself a comprehension check.
+
 ## Customizing the plugin
 
 ### HTML UI design
@@ -78,6 +96,11 @@ Before going deeper into Attention, I want to understand the technical principle
 
 - Suggested subtopics are fixed at one to three.
 - To get fewer or more of them, edit `core principle 1 in SKILL.md`.
+
+### Changing the level calibration
+
+- The three levels and the per-layer writing rules live in `skills/study-on-canvas/references/audience-calibration.md`.
+- Edit that one file to split the levels further or to swap in analogy domains that fit your own situation.
 
 ## Installing the plugin
 
@@ -101,14 +124,24 @@ In Claude Code:
   marketplace.json     single-plugin marketplace definition
 skills/study-on-canvas/
   SKILL.md             the skill itself — execution flow and HTML manipulation spec
+  references/
+    audience-calibration.md  the three levels and per-layer writing rules
   template/
     study-note.html    note template (single file, no external dependencies)
+docs/
+  updates/             records of feature changes
 ```
 
 - The template only holds placeholders such as `{{TITLE}}` and `{{DATE}}` plus markers like `<!-- TABS_INSERT -->`.
 - The plugin never rewrites the whole file; it only inserts between those markers.
 
 
+## Changelog
+
+- [2026-09-22 — Levels and explanation layers](./docs/updates/2026-09-22-눈높이와-설명-레이어.md) (Korean)
+
 ## License
 
 MIT
+
+The level calibration (`references/audience-calibration.md`) is a reworking of the audience tables from the [ELI5 skill](https://github.com/dreambigou/eli5) (MIT, Andrew Ou), adapted to the study-note context.
