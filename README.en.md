@@ -28,7 +28,7 @@
 
 ### 2. The LLM asks where to save the HTML file and at what level to explain.
 
-- By default it creates a `learning-notes` folder in the directory where you ran the plugin and saves the file there.
+- If the directory where you ran the plugin has a `canvas` folder, notes go there without asking. Otherwise it asks where to save, defaulting to `<that directory>/canvas/`. ([talk-on-canvas](https://github.com/winter-blanket/talk-on-canvas) uses the same folder.)
 - If you want a different location, pick option 2, or pick option 3 and type the path yourself.
 - The level is one of Newcomer, Adjacent, or Practitioner. It sets the depth of every explanation in the note and shows up as a badge in the header.
   - Newcomer: every term gets defined on the spot, with plenty of analogies.
